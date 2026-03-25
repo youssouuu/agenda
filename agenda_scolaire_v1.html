@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0d0d0f;--surface:#16161a;--surface2:#1e1e24;--border:#2a2a35;
+  --accent:#c8f135;--text:#f0f0f5;--muted:#6b6b80;--danger:#f87171;--warn:#fb923c;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'DM Mono',monospace;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
+header{padding:20px 24px 0;display:flex;align-items:center;justify-content:space-between;}
+.logo{font-family:'Syne',sans-serif;font-weight:800;font-size:20px;}
+.logo span{color:var(--accent);}
+.date-badge{font-size:11px;color:var(--muted);background:var(--surface2);border:1px solid var(--border);padding:5px 12px;border-radius:20px;}
+.tabs{display:flex;gap:4px;padding:16px 24px 0;}
+.tab{font-family:'Syne',sans-serif;font-weight:600;font-size:11px;padding:7px 16px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;transition:all .2s;text-transform:uppercase;letter-spacing:.5px;}
+.tab.active{background:var(--accent);color:#0d0d0f;border-color:var(--accent);}
+.tab:hover:not(.active){border-color:var(--accent);color:var(--text);}
+main{padding:16px 24px 60px;}
+.view{display:none;}.view.active{display:block;}
+.week-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:20px;}
+.day-col{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px 7px;min-height:100px;}
+.day-col.today{border-color:var(--accent);}
+.day-label{font-family:'Syne',sans-serif;font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:6px;}
+.day-col.today .day-label{color:var(--accent);}
+.task-chip{font-size:9px;padding:3px 6px;border-radius:5px;margin-bottom:3px;font-weight:500;display:flex;align-items:center;gap:4px;}
+.task-chip.done-chip{opacity:.3;text-decoration:line-through;}
+.prio-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0;}
+.prio-3{background:var(--danger);}.prio-2{background:var(--warn);}.prio-1{background:var(--muted);}
+.section-title{font-family:'Syne',sans-serif;font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:10px;}
+.add-form{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;}
+.form-row{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:12px;}
+.field{display:flex;flex-direction:column;gap:4px;}
+.field label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;}
+.field select,.field input{background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:'DM Mono',monospace;font-size:11px;padding:8px 10px;border-radius:7px;outline:none;transition:border-color .2s;}
+.field select:focus,.field input:focus{border-color:var(--accent);}
+.field select option{background:var(--surface2);}
+.sous-parts-list{display:flex;flex-direction:column;gap:6px;margin-bottom:8px;}
+.sous-part-row{display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:6px 10px;}
+.sous-part-row input{flex:1;background:transparent;border:none;color:var(--text);font-family:'DM Mono',monospace;font-size:11px;outline:none;}
+.sous-part-row input::placeholder{color:var(--muted);}
+.btn-remove-sp{background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;padding:0 2px;transition:color .2s;}
+.btn-remove-sp:hover{color:var(--danger);}
+.btn-add-sp{background:none;border:1px dashed var(--border);color:var(--muted);font-family:'DM Mono',monospace;font-size:11px;padding:6px 12px;border-radius:7px;cursor:pointer;transition:all .2s;width:100%;}
+.btn-add-sp:hover{border-color:var(--accent);color:var(--accent);}
+.form-actions{display:flex;gap:8px;justify-content:flex-end;}
+.btn-primary{background:var(--accent);color:#0d0d0f;border:none;font-family:'Syne',sans-serif;font-weight:700;font-size:12px;padding:9px 20px;border-radius:8px;cursor:pointer;transition:all .15s;}
+.btn-primary:hover{opacity:.9;transform:scale(.98);}
+.btn-secondary{background:transparent;color:var(--muted);border:1px solid var(--border);font-family:'Syne',sans-serif;font-weight:600;font-size:12px;padding:9px 16px;border-radius:8px;cursor:pointer;transition:all .15s;}
+.btn-secondary:hover{border-color:var(--muted);color:var(--text);}
+.tasks-list{display:flex;flex-direction:column;gap:8px;margin-bottom:20px;}
+.task-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;transition:border-color .2s;}
+.task-card:hover{border-color:var(--muted);}
+.task-card-header{display:flex;align-items:center;gap:12px;padding:12px 14px;cursor:pointer;}
+.task-color-bar{width:4px;height:36px;border-radius:3px;flex-shrink:0;}
+.task-main{flex:1;}
+.task-name{font-family:'Syne',sans-serif;font-weight:700;font-size:13px;}
+.task-meta{font-size:10px;color:var(--muted);margin-top:2px;}
+.task-prio-badge{font-size:9px;padding:3px 8px;border-radius:12px;font-weight:600;white-space:nowrap;}
+.prio-badge-3{background:rgba(248,113,113,.15);color:var(--danger);}
+.prio-badge-2{background:rgba(251,146,60,.15);color:var(--warn);}
+.prio-badge-1{background:rgba(107,107,128,.15);color:var(--muted);}
+.task-actions{display:flex;gap:6px;}
+.btn-icon{background:none;border:1px solid var(--border);color:var(--muted);padding:5px 8px;border-radius:6px;cursor:pointer;font-size:12px;transition:all .2s;}
+.btn-icon:hover{border-color:var(--accent);color:var(--accent);}
+.btn-icon.danger:hover{border-color:var(--danger);color:var(--danger);}
+.btn-icon.move:hover{border-color:var(--physique);color:#38bdf8;}
+.task-expand{border-top:1px solid var(--border);padding:10px 14px 12px 30px;display:none;}
+.task-expand.open{display:block;}
+.sp-item{display:flex;align-items:center;gap:10px;padding:5px 0;}
+.sp-checkbox{width:15px;height:15px;border-radius:4px;border:1.5px solid var(--border);background:var(--surface2);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s;}
+.sp-checkbox.checked{background:var(--accent);border-color:var(--accent);}
+.sp-checkbox.checked::after{content:'✓';font-size:10px;color:#0d0d0f;font-weight:700;}
+.sp-label{font-size:11px;transition:all .2s;}
+.sp-label.done{text-decoration:line-through;color:var(--muted);}
+.progress-bar-wrap{margin-top:8px;background:var(--surface2);border-radius:4px;height:4px;overflow:hidden;}
+.progress-bar-fill{height:100%;border-radius:4px;background:var(--accent);transition:width .3s;}
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;align-items:center;justify-content:center;padding:20px;}
+.modal-bg.open{display:flex;}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px;width:100%;max-width:500px;max-height:90vh;overflow-y:auto;}
+.modal-title{font-family:'Syne',sans-serif;font-weight:800;font-size:16px;margin-bottom:18px;}
+.modal .form-row{grid-template-columns:1fr 1fr;}
+.modal-footer{display:flex;gap:8px;justify-content:space-between;margin-top:16px;}
+.btn-danger{background:rgba(248,113,113,.15);color:var(--danger);border:1px solid rgba(248,113,113,.3);font-family:'Syne',sans-serif;font-weight:600;font-size:12px;padding:9px 16px;border-radius:8px;cursor:pointer;transition:all .2s;}
+.btn-danger:hover{background:rgba(248,113,113,.25);}
+.planning-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.planning-title{font-family:'Syne',sans-serif;font-weight:800;font-size:18px;}
+.total-badge{font-size:11px;background:var(--surface2);border:1px solid var(--border);padding:5px 12px;border-radius:20px;color:var(--muted);}
+.total-badge span{color:var(--accent);font-weight:700;}
+.planning-info{font-size:10px;color:var(--muted);margin-bottom:14px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 12px;}
+.planning-list{display:flex;flex-direction:column;gap:8px;}
+.planning-slot{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;display:flex;align-items:center;gap:14px;}
+.slot-num{font-family:'Syne',sans-serif;font-weight:800;font-size:20px;color:var(--border);min-width:26px;}
+.slot-bar{width:6px;border-radius:4px;flex-shrink:0;}
+.slot-info{flex:1;}
+.slot-name{font-family:'Syne',sans-serif;font-weight:700;font-size:13px;margin-bottom:2px;}
+.slot-sub{font-size:10px;color:var(--muted);}
+.slot-time-info{text-align:right;}
+.slot-dur{font-family:'Syne',sans-serif;font-weight:700;font-size:15px;color:var(--accent);}
+.slot-at{font-size:10px;color:var(--muted);margin-top:2px;}
+.pause-row{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:10px;padding:4px 0;}
+.pause-line{flex:1;height:1px;background:var(--border);}
+.empty-state{text-align:center;padding:50px 20px;color:var(--muted);font-size:12px;line-height:1.8;}
+
+/* MATIERES VIEW */
+.matieres-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:24px;}
+.matiere-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;display:flex;align-items:center;gap:12px;}
+.matiere-color-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0;}
+.matiere-name{font-family:'Syne',sans-serif;font-weight:700;font-size:13px;flex:1;}
+.matiere-count{font-size:10px;color:var(--muted);}
+.btn-del-matiere{background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;padding:2px 6px;border-radius:5px;transition:all .2s;}
+.btn-del-matiere:hover{color:var(--danger);background:rgba(248,113,113,.1);}
+.add-matiere-form{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;}
+.color-picker-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;}
+.color-opt{width:24px;height:24px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:all .2s;flex-shrink:0;}
+.color-opt.selected{border-color:var(--text);transform:scale(1.2);}
+.matiere-row-add{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:end;margin-top:12px;}
+
+@media(max-width:640px){
+  .week-grid{grid-template-columns:repeat(4,1fr);}
+  .form-row{grid-template-columns:1fr 1fr;}
+  .modal .form-row{grid-template-columns:1fr;}
+  .matieres-grid{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">étude<span>+</span></div>
+  <div class="date-badge" id="dateBadge"></div>
+</header>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('agenda')">Agenda</button>
+  <button class="tab" onclick="switchTab('planning')">Planning Soirée</button>
+  <button class="tab" onclick="switchTab('matieres')">Matières</button>
+</div>
+
+<main>
+
+<!-- AGENDA -->
+<div class="view active" id="view-agenda">
+  <div class="week-grid" id="weekGrid"></div>
+  <div class="section-title">Devoirs à faire</div>
+  <div class="tasks-list" id="tasksList"></div>
+  <div class="section-title">Ajouter un devoir</div>
+  <div class="add-form">
+    <div class="form-row">
+      <div class="field"><label>Matière</label><select id="inp-matiere"></select></div>
+      <div class="field"><label>Type</label>
+        <select id="inp-type">
+          <option value="Exercice">Exercice</option>
+          <option value="Contrôle">Contrôle</option>
+          <option value="Révisions">Révisions</option>
+          <option value="TP">TP</option>
+          <option value="Fiche">Fiche</option>
+        </select>
+      </div>
+      <div class="field"><label>Pour le</label><input type="date" id="inp-date"></div>
+      <div class="field"><label>Difficulté</label>
+        <select id="inp-diff">
+          <option value="1">Facile</option>
+          <option value="2" selected>Moyen</option>
+          <option value="3">Difficile</option>
+        </select>
+      </div>
+    </div>
+    <div class="sous-parties-section">
+      <div class="section-title" style="margin-bottom:8px">Sous-parties</div>
+      <div class="sous-parts-list" id="spList"></div>
+      <button class="btn-add-sp" onclick="addSousPart('spList')">+ Ajouter une sous-partie</button>
+    </div>
+    <div class="form-actions">
+      <button class="btn-primary" id="btnAdd" onclick="addTask()">+ Ajouter le devoir</button>
+    </div>
+  </div>
+</div>
+
+<!-- PLANNING -->
+<div class="view" id="view-planning">
+  <div class="planning-header">
+    <div class="planning-title">Ce soir 🌙</div>
+    <div class="total-badge" id="totalBadge">Total : <span>0h</span></div>
+  </div>
+  <div class="planning-info">📌 Ordre basé sur urgence (deadline + difficulté + sous-parties restantes). Réordonne avec ↑↓ dans l'agenda.</div>
+  <div class="planning-list" id="planningList"></div>
+</div>
+
+<!-- MATIERES -->
+<div class="view" id="view-matieres">
+  <div class="section-title">Mes matières</div>
+  <div class="matieres-grid" id="matieresGrid"></div>
+
+  <div class="section-title">Ajouter une matière</div>
+  <div class="add-matiere-form">
+    <div class="form-row" style="grid-template-columns:1fr;margin-bottom:12px">
+      <div class="field">
+        <label>Nom de la matière</label>
+        <input type="text" id="inp-mat-nom" placeholder="Ex: Histoire-Géo" maxlength="30">
+      </div>
+    </div>
+    <div class="field">
+      <label>Couleur</label>
+      <div class="color-picker-row" id="colorPicker"></div>
+    </div>
+    <div class="matiere-row-add">
+      <div></div>
+      <button class="btn-primary" onclick="addMatiere()">+ Ajouter</button>
+    </div>
+  </div>
+</div>
+
+</main>
+
+<!-- MODAL EDIT DEVOIR -->
+<div class="modal-bg" id="modalBg" onclick="closeModal(event)">
+  <div class="modal">
+    <div class="modal-title">✏️ Modifier le devoir</div>
+    <div class="form-row">
+      <div class="field"><label>Matière</label><select id="edit-matiere"></select></div>
+      <div class="field"><label>Type</label>
+        <select id="edit-type">
+          <option value="Exercice">Exercice</option>
+          <option value="Contrôle">Contrôle</option>
+          <option value="Révisions">Révisions</option>
+          <option value="TP">TP</option>
+          <option value="Fiche">Fiche</option>
+        </select>
+      </div>
+      <div class="field"><label>Pour le</label><input type="date" id="edit-date"></div>
+      <div class="field"><label>Difficulté</label>
+        <select id="edit-diff">
+          <option value="1">Facile</option>
+          <option value="2">Moyen</option>
+          <option value="3">Difficile</option>
+        </select>
+      </div>
+    </div>
+    <div class="sous-parties-section">
+      <div class="section-title" style="margin-bottom:8px">Sous-parties</div>
+      <div class="sous-parts-list" id="editSpList"></div>
+      <button class="btn-add-sp" onclick="addSousPart('editSpList')">+ Ajouter une sous-partie</button>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-danger" onclick="deleteTask()">🗑 Supprimer</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn-secondary" onclick="closeModal()">Annuler</button>
+        <button class="btn-primary" onclick="saveEdit()">Sauvegarder</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ======= DEFAULT MATIERES =======
+const DEFAULT_MATIERES = [
+  {id:'maths',    name:'Maths',           color:'#f59e0b'},
+  {id:'physique', name:'Physique-Chimie', color:'#38bdf8'},
+  {id:'nsi',      name:'NSI',             color:'#c8f135'},
+  {id:'francais', name:'Français',        color:'#f472b6'},
+  {id:'histoire', name:'Histoire-Géo',    color:'#a78bfa'},
+  {id:'anglais',  name:'Anglais',         color:'#34d399'},
+  {id:'espagnol', name:'Espagnol',        color:'#fb923c'},
+  {id:'svt',      name:'SVT',             color:'#4ade80'},
+  {id:'philo',    name:'Philosophie',     color:'#e879f9'},
+  {id:'ses',      name:'SES',             color:'#60a5fa'},
+];
+
+const PALETTE = [
+  '#f59e0b','#38bdf8','#c8f135','#f472b6','#a78bfa',
+  '#34d399','#fb923c','#4ade80','#e879f9','#60a5fa',
+  '#f87171','#fbbf24','#2dd4bf','#818cf8','#e2e8f0',
+];
+
+const TIME_BASE = {Exercice:45,Contrôle:90,Révisions:60,TP:55,Fiche:30};
+const CONSEILS_BASE = {
+  Exercice:"Essaie sans le cours d'abord",
+  Contrôle:"Refais les annales à blanc",
+  Révisions:"Fais des fiches actives",
+  TP:"Lis le protocole en entier",
+  Fiche:"Synthèse = 1 page max"
+};
+
+let matieres = JSON.parse(localStorage.getItem('etude_matieres_v3') || 'null') || DEFAULT_MATIERES;
+let tasks    = JSON.parse(localStorage.getItem('etude_tasks_v3')    || '[]');
+let editingId = null;
+let expandedId = null;
+let selectedColor = PALETTE[0];
+let spCounter = 0;
+
+// ======= UTILS =======
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+function fmtDate(d){ return d instanceof Date?d.toISOString().split('T')[0]:d; }
+function todayStr(){ return fmtDate(new Date()); }
+function daysUntil(ds){ return Math.ceil((new Date(ds)-new Date(todayStr()))/86400000); }
+function durationFmt(min){ if(min<60)return min+'min'; return Math.floor(min/60)+'h'+(min%60?min%60+'min':''); }
+function getMat(id){ return matieres.find(m=>m.id===id)||{name:id,color:'#888'}; }
+function saveAll(){
+  localStorage.setItem('etude_matieres_v3',JSON.stringify(matieres));
+  localStorage.setItem('etude_tasks_v3',JSON.stringify(tasks));
+}
+
+function calcPriority(t){
+  const rem = t.sousParts.filter(s=>!s.done).length||1;
+  const total = t.sousParts.length||1;
+  const days = daysUntil(t.date);
+  const dayScore = days<=0?100:days===1?60:days===2?30:Math.max(0,20-days*2);
+  return dayScore + (rem/total)*20 + t.diff*5;
+}
+function getPrioLevel(t){ const s=calcPriority(t); return s>=60?3:s>=25?2:1; }
+function prioLabel(l){ return l===3?'🔴 Urgent':l===2?'🟠 Moyen':'🔵 Tranquille'; }
+
+// ======= POPULATE SELECTS =======
+function populateMatiereSelects(){
+  ['inp-matiere','edit-matiere'].forEach(id=>{
+    const sel = document.getElementById(id);
+    if(!sel) return;
+    const val = sel.value;
+    sel.innerHTML = matieres.map(m=>`<option value="${m.id}">${m.name}</option>`).join('');
+    if(val) sel.value = val;
+  });
+}
+
+// ======= WEEK GRID =======
+function getWeekDates(){
+  const today=new Date(), day=today.getDay(), off=day===0?-6:1-day;
+  const mon=new Date(today); mon.setDate(today.getDate()+off);
+  return Array.from({length:7},(_,i)=>{const d=new Date(mon);d.setDate(mon.getDate()+i);return d;});
+}
+function renderWeek(){
+  const grid=document.getElementById('weekGrid');
+  const DAYS=['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
+  grid.innerHTML='';
+  getWeekDates().forEach((date,i)=>{
+    const ds=fmtDate(date);
+    const dayTasks=tasks.filter(t=>t.date===ds);
+    const col=document.createElement('div');
+    col.className='day-col'+(fmtDate(date)===todayStr()?' today':'');
+    const chips=dayTasks.map(t=>{
+      const m=getMat(t.matiere);
+      const allDone=t.sousParts.length>0&&t.sousParts.every(s=>s.done);
+      return `<div class="task-chip${allDone?' done-chip':''}" style="background:${m.color}22;color:${m.color};border-left:2px solid ${m.color}">
+        <span class="prio-dot prio-${getPrioLevel(t)}"></span>
+        <span>${t.type.substring(0,5)}</span>
+      </div>`;
+    }).join('');
+    col.innerHTML=`<div class="day-label">${DAYS[i]} ${date.getDate()}</div>${chips||'<div style="font-size:9px;color:var(--muted)">—</div>'}`;
+    grid.appendChild(col);
+  });
+}
+
+// ======= TASK LIST =======
+function renderTaskList(){
+  const list=document.getElementById('tasksList');
+  if(tasks.length===0){list.innerHTML='<div class="empty-state">Aucun devoir 🎉<br>Ajoute-en un ci-dessous !</div>';return;}
+  const sorted=[...tasks].sort((a,b)=>(a.order||0)-(b.order||0));
+  list.innerHTML=sorted.map((t,idx)=>{
+    const m=getMat(t.matiere);
+    const prio=getPrioLevel(t);
+    const days=daysUntil(t.date);
+    const dLabel=days<0?'En retard !':days===0?"Aujourd'hui":days===1?'Demain':`Dans ${days}j`;
+    const spCount=t.sousParts.length, spDone=t.sousParts.filter(s=>s.done).length;
+    const prog=spCount>0?Math.round(spDone/spCount*100):0;
+    const isExp=expandedId===t.id;
+    const dur=TIME_BASE[t.type]||45;
+    const spHTML=t.sousParts.map(sp=>`
+      <div class="sp-item">
+        <div class="sp-checkbox${sp.done?' checked':''}" onclick="toggleSP('${t.id}','${sp.id}')"></div>
+        <span class="sp-label${sp.done?' done':''}">${sp.name}</span>
+      </div>`).join('');
+    return `<div class="task-card" id="card-${t.id}">
+      <div class="task-card-header" onclick="toggleExpand('${t.id}')">
+        <div class="task-color-bar" style="background:${m.color}"></div>
+        <div class="task-main">
+          <div class="task-name">${m.name} — ${t.type}</div>
+          <div class="task-meta">${dLabel} · ${durationFmt(dur)}${spCount>0?` · ${spDone}/${spCount} sous-parties`:''}</div>
+        </div>
+        <span class="task-prio-badge prio-badge-${prio}">${prioLabel(prio)}</span>
+        <div class="task-actions" onclick="event.stopPropagation()">
+          <button class="btn-icon move" onclick="moveTask('${t.id}',-1)">↑</button>
+          <button class="btn-icon move" onclick="moveTask('${t.id}',1)">↓</button>
+          <button class="btn-icon" onclick="openEdit('${t.id}')">✏️</button>
+        </div>
+      </div>
+      ${spCount>0?`<div class="task-expand${isExp?' open':''}" id="expand-${t.id}">
+        ${spHTML}
+        <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${prog}%"></div></div>
+        <div style="font-size:10px;color:var(--muted);margin-top:4px">${prog}% terminé</div>
+      </div>`:''}
+    </div>`;
+  }).join('');
+}
+
+function toggleExpand(id){expandedId=expandedId===id?null:id;renderTaskList();}
+function toggleSP(tid,sid){
+  const t=tasks.find(t=>t.id===tid), sp=t.sousParts.find(s=>s.id===sid);
+  sp.done=!sp.done; saveAll(); renderWeek(); renderTaskList();
+}
+function moveTask(id,dir){
+  const sorted=[...tasks].sort((a,b)=>(a.order||0)-(b.order||0));
+  const idx=sorted.findIndex(t=>t.id===id), ni=idx+dir;
+  if(ni<0||ni>=sorted.length)return;
+  const tmp=sorted[idx].order; sorted[idx].order=sorted[ni].order; sorted[ni].order=tmp;
+  tasks.forEach(t=>{const s=sorted.find(x=>x.id===t.id);if(s)t.order=s.order;});
+  saveAll(); renderTaskList();
+}
+
+// ======= SOUS-PARTIES =======
+function addSousPart(listId, name=''){
+  const list=document.getElementById(listId);
+  const rid='spr-'+(spCounter++);
+  const row=document.createElement('div'); row.className='sous-part-row'; row.id=rid;
+  row.innerHTML=`<input type="text" placeholder="Ex: Exercice 3 p.42" value="${name}">
+    <button class="btn-remove-sp" onclick="document.getElementById('${rid}').remove()">×</button>`;
+  list.appendChild(row);
+}
+function getSPNames(listId){
+  return [...document.getElementById(listId).querySelectorAll('input')].map(i=>i.value.trim()).filter(Boolean);
+}
+
+// ======= ADD TASK =======
+function addTask(){
+  const matiere=document.getElementById('inp-matiere').value;
+  const type=document.getElementById('inp-type').value;
+  const date=document.getElementById('inp-date').value;
+  const diff=parseInt(document.getElementById('inp-diff').value);
+  if(!date)return;
+  const spNames=getSPNames('spList');
+  const sousParts=spNames.map(name=>({id:uid(),name,done:false}));
+  const maxOrder=tasks.length>0?Math.max(...tasks.map(t=>t.order||0)):0;
+  tasks.push({id:uid(),matiere,type,date,diff,sousParts,order:maxOrder+1});
+  saveAll();
+  document.getElementById('spList').innerHTML='';
+  const btn=document.getElementById('btnAdd');
+  btn.textContent='✓ Ajouté !'; setTimeout(()=>btn.textContent='+ Ajouter le devoir',1200);
+  renderWeek(); renderTaskList();
+}
+
+// ======= EDIT MODAL =======
+function openEdit(id){
+  editingId=id;
+  const t=tasks.find(t=>t.id===id);
+  populateMatiereSelects();
+  document.getElementById('edit-matiere').value=t.matiere;
+  document.getElementById('edit-type').value=t.type;
+  document.getElementById('edit-date').value=t.date;
+  document.getElementById('edit-diff').value=t.diff;
+  const list=document.getElementById('editSpList'); list.innerHTML='';
+  t.sousParts.forEach(sp=>{
+    const row=document.createElement('div'); row.className='sous-part-row'; row.dataset.spid=sp.id;
+    row.innerHTML=`<input type="text" value="${sp.name}"><button class="btn-remove-sp" onclick="this.parentElement.remove()">×</button>`;
+    list.appendChild(row);
+  });
+  document.getElementById('modalBg').classList.add('open');
+}
+function saveEdit(){
+  const t=tasks.find(t=>t.id===editingId);
+  t.matiere=document.getElementById('edit-matiere').value;
+  t.type=document.getElementById('edit-type').value;
+  t.date=document.getElementById('edit-date').value;
+  t.diff=parseInt(document.getElementById('edit-diff').value);
+  const rows=document.getElementById('editSpList').querySelectorAll('.sous-part-row');
+  t.sousParts=[...rows].map(row=>{
+    const sid=row.dataset.spid||uid();
+    const name=row.querySelector('input').value.trim();
+    const ex=t.sousParts.find(s=>s.id===sid);
+    return {id:sid,name,done:ex?ex.done:false};
+  }).filter(s=>s.name);
+  saveAll(); closeModal(); renderWeek(); renderTaskList();
+}
+function deleteTask(){
+  if(!confirm('Supprimer ce devoir ?'))return;
+  tasks=tasks.filter(t=>t.id!==editingId);
+  saveAll(); closeModal(); renderWeek(); renderTaskList();
+}
+function closeModal(e){
+  if(e&&e.target!==document.getElementById('modalBg'))return;
+  document.getElementById('modalBg').classList.remove('open'); editingId=null;
+}
+
+// ======= PLANNING =======
+function renderPlanning(){
+  const list=document.getElementById('planningList');
+  const badge=document.getElementById('totalBadge');
+  const rel=tasks
+    .filter(t=>daysUntil(t.date)<=2&&daysUntil(t.date)>=0)
+    .filter(t=>t.sousParts.length===0||!t.sousParts.every(s=>s.done))
+    .sort((a,b)=>calcPriority(b)-calcPriority(a));
+  if(rel.length===0){
+    list.innerHTML='<div class="empty-state">Rien d\'urgent ce soir 🎉<br>Ajoute des devoirs dans l\'agenda.</div>';
+    badge.innerHTML='Total : <span>0h</span>'; return;
+  }
+  let totalMin=0,curMin=18*60,html='';
+  rel.forEach((t,i)=>{
+    const m=getMat(t.matiere);
+    const spRem=t.sousParts.filter(s=>!s.done);
+    const spLabel=spRem.length>0?spRem.map(s=>s.name).join(', '):'Travail complet';
+    const dur=TIME_BASE[t.type]||45;
+    totalMin+=dur;
+    const h=Math.floor(curMin/60),min=curMin%60;
+    html+=`<div class="planning-slot">
+      <div class="slot-num">${String(i+1).padStart(2,'0')}</div>
+      <div class="slot-bar" style="background:${m.color};height:40px"></div>
+      <div class="slot-info">
+        <div class="slot-name">${m.name} — ${t.type}</div>
+        <div class="slot-sub">${spLabel.substring(0,55)}${spLabel.length>55?'…':''}</div>
+        <div class="slot-sub" style="margin-top:2px;font-style:italic">${CONSEILS_BASE[t.type]||''}</div>
+      </div>
+      <div class="slot-time-info">
+        <div class="slot-dur">${durationFmt(dur)}</div>
+        <div class="slot-at">→ ${h}h${min.toString().padStart(2,'0')}</div>
+      </div>
+    </div>`;
+    curMin+=dur;
+    if(i<rel.length-1&&(i+1)%2===0){
+      curMin+=10;
+      const ph=Math.floor(curMin/60),pm=curMin%60;
+      html+=`<div class="pause-row"><div class="pause-line"></div>☕ Pause 10min — ${ph}h${pm.toString().padStart(2,'0')}<div class="pause-line"></div></div>`;
+    }
+  });
+  badge.innerHTML=`Total : <span>${durationFmt(totalMin)}</span>`;
+  list.innerHTML=html;
+}
+
+// ======= MATIERES =======
+function renderMatieres(){
+  const grid=document.getElementById('matieresGrid');
+  grid.innerHTML=matieres.map(m=>{
+    const count=tasks.filter(t=>t.matiere===m.id).length;
+    return `<div class="matiere-card">
+      <div class="matiere-color-dot" style="background:${m.color}"></div>
+      <div style="flex:1">
+        <div class="matiere-name">${m.name}</div>
+        <div class="matiere-count">${count} devoir${count!==1?'s':''}</div>
+      </div>
+      <button class="btn-del-matiere" onclick="deleteMatiere('${m.id}')" title="Supprimer">🗑</button>
+    </div>`;
+  }).join('');
+}
+
+function renderColorPicker(){
+  const row=document.getElementById('colorPicker');
+  row.innerHTML=PALETTE.map(c=>`
+    <div class="color-opt${c===selectedColor?' selected':''}" style="background:${c}" onclick="selectColor('${c}')"></div>
+  `).join('');
+}
+
+function selectColor(c){
+  selectedColor=c;
+  renderColorPicker();
+}
+
+function addMatiere(){
+  const nom=document.getElementById('inp-mat-nom').value.trim();
+  if(!nom)return;
+  if(matieres.find(m=>m.name.toLowerCase()===nom.toLowerCase())){
+    alert('Cette matière existe déjà !'); return;
+  }
+  const id=uid();
+  matieres.push({id, name:nom, color:selectedColor});
+  saveAll(); populateMatiereSelects(); renderMatieres();
+  document.getElementById('inp-mat-nom').value='';
+  selectedColor=PALETTE[0]; renderColorPicker();
+}
+
+function deleteMatiere(id){
+  const count=tasks.filter(t=>t.matiere===id).length;
+  const msg=count>0
+    ? `Cette matière a ${count} devoir(s) associé(s). Supprimer quand même ?`
+    : 'Supprimer cette matière ?';
+  if(!confirm(msg))return;
+  matieres=matieres.filter(m=>m.id!==id);
+  saveAll(); populateMatiereSelects(); renderMatieres(); renderWeek(); renderTaskList();
+}
+
+// ======= TABS =======
+function switchTab(tab){
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',['agenda','planning','matieres'][i]===tab));
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('view-'+tab).classList.add('active');
+  if(tab==='planning')renderPlanning();
+  if(tab==='matieres'){renderMatieres();renderColorPicker();}
+}
+
+// ======= INIT =======
+const now=new Date();
+document.getElementById('dateBadge').textContent=now.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'});
+const tom=new Date(); tom.setDate(tom.getDate()+1);
+document.getElementById('inp-date').value=fmtDate(tom);
+populateMatiereSelects();
+renderWeek(); renderTaskList(); renderColorPicker();
+</script>
+</body>
+</html>
